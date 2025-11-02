@@ -5,6 +5,9 @@ studentID,questionID,studentAnswer,correctAnswer,similarity,score,need_review
 4,Q1,150 degrees celsius,The boiling point of water is 100 degrees Celsius.,0.62,0.0,True
 5,Q1,Greenland,The boiling point of water is 100 degrees Celsius.,0.03,0.0,True
 6,Q1,น้ำเดือดที่ 100 องศาเซลเซียส,The boiling point of water is 100 degrees Celsius.,0.18,0.0,True
+7,Q1,The boiling point of water is 90 degrees Celsius.,The boiling point of water is 100 degrees Celsius.,0.95,1.0,False
+8,Q1,The boiling point of water is 100 degrees Celsius.,The boiling point of water is 100 degrees Celsius.,1.0,1.0,False
+9,Q1,Boiling point is 100 C.,The boiling point of water is 100 degrees Celsius.,0.84,0.5,True
 1,Q2,The capital of France is Paris.,The capital of France is Paris.,1.0,1.0,False
 2,Q2,Paris is the capital of France.,The capital of France is Paris.,0.99,1.0,False
 3,Q2,The capital of France is London.,The capital of France is Paris.,0.84,0.5,True

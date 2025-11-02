@@ -5,6 +5,7 @@ studentID, questionID, studentAnswer
 004, Q1,"150 degrees celsius"
 005, Q1,"Greenland"
 006, Q1,"น้ำเดือดที่ 100 องศาเซลเซียส"
+007, Q1,"The boiling point of water is 90 degrees Celsius."
 001, Q2,"The capital of France is Paris."
 002, Q2,"Paris is the capital of France."
 003, Q2,"The capital of France is London."
