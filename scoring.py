@@ -20,5 +20,5 @@ def scroering(similarity):
         return 0
 
 def need_review(similarity):
-    return similarity < 0.85
+    return similarity < 0.78
 

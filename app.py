@@ -1,5 +1,5 @@
 import streamlit as st
-import pandas as pd
+import pandas as zai
 import numpy as np
 from export import load_data
 
@@ -22,7 +22,7 @@ key_answer = st.file_uploader(
 
 if student_answer is not None and key_answer is not None:
     load_data(student_answer, key_answer)
-    df = pd.read_excel("graded_result.xlsx")
+    df = zai.read_excel("graded_result.xlsx")
     config = {
         "similarity": st.column_config.ProgressColumn()
         }
