@@ -1,19 +1,34 @@
 import pandas as pd
 import sys
+import streamlit as st
 
-def transform_quiz_to_answer_format(input_file, output_file='answer.csv'):
+def transform_quiz_to_answer_format(input_file, output_file=None):
     """
-    Transform a simple quiz CSV to the answer.csv format.
+    Transform a quiz file to the answer.csv format.
     
-    Expected input format options:
-    1. Wide format: studentID, Q1, Q2, Q3, ...
-    2. Already in correct format: studentID, questionID, studentAnswer
+    Supports:
+    1. Google Forms format: Timestamp, Student ID, question columns
+    2. Wide format: studentID, Q1, Q2, Q3, ...
+    3. Long format: studentID, questionID, studentAnswer (no transformation needed)
     
-    Output format: studentID, questionID, studentAnswer
+    Args:
+        input_file: File path (string) or file-like object from Streamlit
+        output_file: Output file path (optional, only used in CLI mode)
+    
+    Returns:
+        DataFrame in format: studentID, questionID, studentAnswer
     """
     try:
         # Read the input file
-        df = pd.read_csv(input_file, skipinitialspace=True)
+        if isinstance(input_file, str):
+            # File path provided (CLI mode)
+            df = pd.read_csv(input_file, skipinitialspace=True)
+        else:
+            # File-like object from Streamlit
+            if hasattr(input_file, 'name') and input_file.name.endswith('.xlsx'):
+                df = pd.read_excel(input_file)
+            else:
+                df = pd.read_csv(input_file, skipinitialspace=True)
         
         # Clean column names
         df.columns = df.columns.str.strip()
@@ -22,44 +37,111 @@ def transform_quiz_to_answer_format(input_file, output_file='answer.csv'):
         print(f"Input shape: {df.shape}")
         
         # Check if already in correct format
-        if set(['studentID', 'questionID', 'studentAnswer']).issubset(df.columns):
+        required_cols = {'studentID', 'questionID', 'studentAnswer'}
+        if required_cols.issubset(df.columns):
             print("✓ File is already in correct format!")
             df_output = df[['studentID', 'questionID', 'studentAnswer']]
         
-        # Check if in wide format (studentID + question columns)
-        elif 'studentID' in df.columns:
-            print("Converting from wide format to long format...")
-            
-            # Get question columns (all columns except studentID)
-            question_cols = [col for col in df.columns if col != 'studentID']
-            
-            # Melt the dataframe
-            df_output = pd.melt(
-                df,
-                id_vars=['studentID'],
-                value_vars=question_cols,
-                var_name='questionID',
-                value_name='studentAnswer'
-            )
-            
-            # Remove rows with missing answers
-            df_output = df_output.dropna(subset=['studentAnswer'])
-            
-            # Sort by studentID and questionID
-            df_output = df_output.sort_values(['studentID', 'questionID']).reset_index(drop=True)
-            
-            print(f"✓ Converted {len(df)} students with {len(question_cols)} questions each")
-        
+        # Check for Google Forms format (has a student identifier column)
         else:
-            print("❌ Error: Could not identify format. Expected 'studentID' column.")
-            print("Supported formats:")
-            print("1. Wide: studentID, Q1, Q2, Q3, ...")
-            print("2. Long: studentID, questionID, studentAnswer")
-            return None
+            student_id_col = None
+            
+            # Look for student ID column (case-insensitive)
+            for col in df.columns:
+                if 'student' in col.lower() and 'id' in col.lower():
+                    student_id_col = col
+                    break
+            
+            if student_id_col:
+                print(f"✓ Detected Google Forms format with column: '{student_id_col}'")
+                
+                # Identify metadata columns to exclude
+                exclude_cols = [student_id_col]
+                for col in df.columns:
+                    col_lower = col.lower()
+                    if any(x in col_lower for x in ['timestamp', 'score', 'email', 'username', 'name']):
+                        exclude_cols.append(col)
+                        print(f"  Excluding metadata: {col}")
+                
+                # Get question columns
+                question_cols = [col for col in df.columns if col not in exclude_cols]
+                
+                if len(question_cols) == 0:
+                    print("❌ No question columns found")
+                    return None
+                
+                print(f"✓ Found {len(question_cols)} question columns")
+                
+                # Create question ID mapping (Q1, Q2, Q3, etc.)
+                question_mapping = {col: f"Q{i+1}" for i, col in enumerate(question_cols)}
+                
+                # Show mapping
+                print("\nQuestion Mapping:")
+                for orig, qid in question_mapping.items():
+                    print(f"  {qid} ← {orig}")
+                
+                # Transform to long format
+                df_output = pd.melt(
+                    df,
+                    id_vars=[student_id_col],
+                    value_vars=question_cols,
+                    var_name='questionID',
+                    value_name='studentAnswer'
+                )
+                
+                # Rename student ID column
+                df_output = df_output.rename(columns={student_id_col: 'studentID'})
+                
+                # Map question text to Q1, Q2, Q3
+                df_output['questionID'] = df_output['questionID'].map(question_mapping)
+                
+                # Remove rows with missing or empty answers
+                df_output = df_output.dropna(subset=['studentAnswer'])
+                df_output = df_output[df_output['studentAnswer'].astype(str).str.strip() != '']
+                
+                # Sort by studentID and questionID
+                df_output = df_output.sort_values(['studentID', 'questionID']).reset_index(drop=True)
+                
+                print(f"✓ Transformed: {len(df)} students × {len(question_cols)} questions = {len(df_output)} answers")
+            
+            # Check if in simple wide format (studentID + Q1, Q2, Q3...)
+            elif 'studentID' in df.columns:
+                print("✓ Converting from wide format to long format...")
+                
+                # Get question columns
+                question_cols = [col for col in df.columns if col != 'studentID']
+                
+                # Transform to long format
+                df_output = pd.melt(
+                    df,
+                    id_vars=['studentID'],
+                    value_vars=question_cols,
+                    var_name='questionID',
+                    value_name='studentAnswer'
+                )
+                
+                # Remove rows with missing answers
+                df_output = df_output.dropna(subset=['studentAnswer'])
+                
+                # Sort by studentID and questionID
+                df_output = df_output.sort_values(['studentID', 'questionID']).reset_index(drop=True)
+                
+                print(f"✓ Transformed: {len(df)} students × {len(question_cols)} questions = {len(df_output)} answers")
+            
+            else:
+                print("❌ Error: Could not identify format")
+                print("Expected one of:")
+                print("1. Google Forms: Timestamp, Student ID, Question1, Question2, ...")
+                print("2. Wide format: studentID, Q1, Q2, Q3, ...")
+                print("3. Long format: studentID, questionID, studentAnswer")
+                print(f"\nFound columns: {list(df.columns)}")
+                return None
         
-        # Save to output file
-        df_output.to_csv(output_file, index=False)
-        print(f"✓ Saved to {output_file}")
+        # Save to output file if specified (CLI mode)
+        if output_file:
+            df_output.to_csv(output_file, index=False)
+            print(f"✓ Saved to {output_file}")
+        
         print(f"Output shape: {df_output.shape}")
         print("\nFirst few rows:")
         print(df_output.head(10))
@@ -71,6 +153,8 @@ def transform_quiz_to_answer_format(input_file, output_file='answer.csv'):
         return None
     except Exception as e:
         print(f"❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
 
 

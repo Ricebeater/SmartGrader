@@ -1,0 +1,10 @@
+studentID,questionID,studentAnswer,correctAnswer,similarity,score,need_review
+1,Q1,bangkok,Bangkok is the capital of Thailand.,0.8,0.5,False
+1,Q2,Brain's main control center,The hypothalamus acts as the brain's main control center.,0.79,0.5,False
+1,Q3,100 degree celcius,The boiling point of water is 100 degrees Celsius.,0.72,0.0,True
+2,Q1,Chaing mai,Bangkok is the capital of Thailand.,0.08,0.0,True
+2,Q2,main control center of the brain,The hypothalamus acts as the brain's main control center.,0.82,0.5,False
+2,Q3,water boiled at 100 degree celcius,The boiling point of water is 100 degrees Celsius.,0.87,1.0,False
+3,Q1,Metrocity,Bangkok is the capital of Thailand.,0.12,0.0,True
+3,Q2,Invent gadgets,The hypothalamus acts as the brain's main control center.,-0.01,0.0,True
+3,Q3,100 celcius,The boiling point of water is 100 degrees Celsius.,0.68,0.0,True
